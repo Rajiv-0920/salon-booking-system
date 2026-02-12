@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import app from './app.js';
 import connectDB from './config/database.js';
-import swaggerDocs from './config/swegger.js';
+import swaggerDocs from './config/swagger.js';
 
 dotenv.config();
 const PORT = 5000;
