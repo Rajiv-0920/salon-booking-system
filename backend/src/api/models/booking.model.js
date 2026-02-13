@@ -1,13 +1,11 @@
-// Booking Schema: customer, salon, service, staff, date, time, status, notes
-
 import mongoose from 'mongoose';
 
 const BookingSchema = new mongoose.Schema(
   {
-    customer: {
+    user: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Customer',
-      required: [true, 'Customer is required'],
+      ref: 'User',
+      required: [true, 'User is required'],
     },
     salon: {
       type: mongoose.Schema.Types.ObjectId,

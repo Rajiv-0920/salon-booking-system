@@ -6,7 +6,7 @@ import jwt from 'jsonwebtoken';
 
 export const register = async (req, res) => {
   try {
-    const { name, email, password, phone, role } = req.body;
+    const { name, email, password, phone } = req.body;
 
     let user = await User.findOne({ email });
     if (user) {
@@ -17,7 +17,6 @@ export const register = async (req, res) => {
       name,
       email,
       password,
-      role,
       phone,
     });
 
@@ -31,7 +30,7 @@ export const register = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role,
+        role: 'customer',
       },
     });
   } catch (error) {
@@ -193,7 +192,7 @@ export const updatePassword = async (req, res) => {
 
 export const updateProfile = async (req, res) => {
   try {
-    const { name, role, phone } = req.body;
+    const { name, phone } = req.body;
 
     const user = await User.findById(req.user.id);
 
@@ -202,7 +201,6 @@ export const updateProfile = async (req, res) => {
     }
 
     user.name = name;
-    user.role = role;
     user.phone = phone;
 
     await user.save({ validateBeforeSave: false });
