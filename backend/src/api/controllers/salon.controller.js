@@ -94,7 +94,9 @@ export const getSalon = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const salon = await Salon.findById(id).populate('owner', 'name email');
+    const salon = await Salon.findById(id)
+      .populate('owner', 'name email')
+      .populate('services');
 
     if (!salon) {
       return res

@@ -11,6 +11,10 @@ const ServiceSchema = new mongoose.Schema(
     duration: { type: Number, required: [true, 'Duration is required'] },
     price: { type: Number, required: [true, 'Price is required'] },
     description: { type: String, required: [true, 'Description is required'] },
+    category: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Category',
+    },
   },
   { timestamps: true },
 );
