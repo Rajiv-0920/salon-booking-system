@@ -20,31 +20,14 @@ export const protect = async (req, res, next) => {
   }
 };
 
-export const admin = async (req, res, next) => {
-  const { token } = req.cookies;
-
-  if (!token) {
-    return res.status(401).json({ message: 'Not authorized, no token' });
-  }
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    const user = await User.findById(decoded.id);
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    if (user.role !== 'admin') {
-      return res.status(403).json({ message: 'Access denied: Admins only' });
-    }
-
-    req.user = user;
+export const admin = (req, res, next) => {
+  if (req.user && req.user.role === 'admin') {
     next();
-  } catch (error) {
-    console.error(`Admin Middleware Error: ${error.message}`);
-    return res.status(401).json({ message: 'Not authorized, token invalid' });
+  } else {
+    return res.status(403).json({
+      success: false,
+      message: 'Access denied: Admins only',
+    });
   }
 };
 

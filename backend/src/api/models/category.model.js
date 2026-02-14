@@ -21,11 +21,10 @@ const CategorySchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+CategorySchema.pre('save', function () {
+  this.slug = slugify(this.name, { lower: true, strict: true });
+});
+
 const Category = mongoose.model('Category', CategorySchema);
 
 export default Category;
-
-CategorySchema.pre('save', function (next) {
-  this.slug = slugify(this.name, { lower: true, strict: true });
-  next();
-});
