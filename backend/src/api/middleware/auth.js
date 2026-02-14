@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/user.model.js';
+import Salon from '../models/salon.model.js';
 
 export const protect = async (req, res, next) => {
   let { token } = req.cookies;
@@ -55,5 +56,39 @@ export const isOwnerOrAdmin = (req, res, next) => {
     next();
   } else {
     res.status(403).json({ message: 'Not authorized to access this data' });
+  }
+};
+
+export const isTheSalonOwner = async (req, res, next) => {
+  try {
+    const salon = await Salon.findById(req.params.id);
+
+    if (!salon) {
+      return res.status(404).json({
+        success: false,
+        message: 'Salon not found',
+      });
+    }
+
+    const isTheOwner = salon.owner.toString() === req.user.id.toString();
+    // const isAdmin = req.user.role === 'admin';
+
+    if (!isTheOwner) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied: You do not own this salon',
+      });
+    }
+
+    // 3. Attach the salon object to the request so the controller doesn't have to find it again
+    req.salon = salon;
+
+    next();
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Middleware Error',
+      error: error.message,
+    });
   }
 };
