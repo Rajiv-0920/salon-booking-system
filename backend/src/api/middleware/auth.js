@@ -44,7 +44,8 @@ export const isOwnerOrAdmin = (req, res, next) => {
 
 export const isTheSalonOwner = async (req, res, next) => {
   try {
-    const salon = await Salon.findById(req.params.id);
+    const { _id: userId } = req.user;
+    const salon = await Salon.findOne({ owner: userId });
 
     if (!salon) {
       return res.status(404).json({
