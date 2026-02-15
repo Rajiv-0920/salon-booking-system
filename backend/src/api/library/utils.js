@@ -13,3 +13,16 @@ export const generateToken = (res, { id, role }) => {
 
   return token;
 };
+
+export const timeToMinutes = (t) => {
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+};
+
+export const minutesToTime = (m) => {
+  const h = Math.floor(m / 60)
+    .toString()
+    .padStart(2, '0');
+  const min = (m % 60).toString().padStart(2, '0');
+  return `${h}:${min}`;
+};
