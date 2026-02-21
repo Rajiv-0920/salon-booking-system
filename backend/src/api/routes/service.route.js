@@ -1,6 +1,10 @@
 import { Router } from 'express';
 import * as controller from '../controllers/service.controller.js';
-import { protect } from '../middleware/auth.js';
+import {
+  protect,
+  restrictTo,
+  verifyServiceOwnership,
+} from '../middleware/auth.middleware.js';
 
 const router = Router();
 
@@ -98,7 +102,7 @@ router.get('/:id', controller.getServiceById);
  *       201:
  *         description: Service created successfully
  */
-router.post('/', protect, controller.createService);
+router.post('/', protect, restrictTo('salon-owner'), controller.createService);
 
 /**
  * @swagger
@@ -124,7 +128,7 @@ router.post('/', protect, controller.createService);
  *       200:
  *         description: Service updated successfully
  */
-router.put('/:id', protect, controller.updateService);
+router.put('/:id', protect, verifyServiceOwnership, controller.updateService);
 
 /**
  * @swagger
@@ -144,7 +148,13 @@ router.put('/:id', protect, controller.updateService);
  *       200:
  *         description: Service deleted successfully
  */
-router.delete('/:id', protect, controller.deleteService);
+router.delete(
+  '/:id',
+  protect,
+  restrictTo('salon-owner', 'super-admin'),
+  verifyServiceOwnership,
+  controller.deleteService,
+);
 
 /**
  * @swagger

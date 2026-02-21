@@ -14,15 +14,29 @@ export const generateToken = (res, { id, role }) => {
   return token;
 };
 
-export const timeToMinutes = (t) => {
-  const [h, m] = t.split(':').map(Number);
-  return h * 60 + m;
+export const timeToMinutes = (time) => {
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
 };
 
-export const minutesToTime = (m) => {
-  const h = Math.floor(m / 60)
-    .toString()
-    .padStart(2, '0');
-  const min = (m % 60).toString().padStart(2, '0');
-  return `${h}:${min}`;
+export const minutesToTime = (minutes) => {
+  const h = String(Math.floor(minutes / 60)).padStart(2, '0');
+  const m = String(minutes % 60).padStart(2, '0');
+  return `${h}:${m}`;
+};
+
+export const isValidTimeFormat = (t) => /^([01]\d|2[0-3]):[0-5]\d$/.test(t);
+
+export const isValidDateFormat = (d) => /^\d{4}-\d{2}-\d{2}$/.test(d);
+
+export const parseDateUTC = (dateStr) => {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day));
+};
+
+export const getDayOfWeek = (dateStr) => {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day)
+    .toLocaleDateString('en-US', { weekday: 'long' })
+    .toLowerCase(); // "monday", "tuesday", etc.
 };

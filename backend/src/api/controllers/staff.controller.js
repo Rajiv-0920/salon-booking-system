@@ -2,11 +2,27 @@ import Staff from '../models/staff.model.js';
 import Salon from '../models/salon.model.js';
 import Booking from '../models/booking.model.js';
 import Service from '../models/services.model.js';
-import { minutesToTime, timeToMinutes } from '../library/utils.js';
+import User from '../models/user.model.js';
+import {
+  getDayOfWeek,
+  minutesToTime,
+  parseDateUTC,
+  timeToMinutes,
+} from '../library/utils.js';
 
 export const getAllStaff = async (req, res) => {
   try {
-    const staff = await Staff.find();
+    if (req.user.role === 'super-admin') {
+      return res.status(200).json({
+        success: true,
+        message: 'Staff retrieved successfully',
+        data: await Staff.find(),
+      });
+    }
+
+    const salonId = req.user.salonId;
+
+    const staff = await Staff.find({ salonId });
 
     if (!staff) {
       return res
@@ -14,7 +30,12 @@ export const getAllStaff = async (req, res) => {
         .json({ success: false, message: 'Staff not found' });
     }
 
-    res.status(200).json({ success: true, count: staff.length, data: staff });
+    res.status(200).json({
+      success: true,
+      message: 'Staff retrieved successfully',
+      count: staff.length,
+      data: staff,
+    });
   } catch (error) {
     console.log('Error in getAllStaff:', error.message);
     res.status(500).json({ success: false, message: error.message });
@@ -23,8 +44,7 @@ export const getAllStaff = async (req, res) => {
 
 export const getStaffById = async (req, res) => {
   try {
-    const { id } = req.params;
-    const staff = await Staff.findById(id);
+    const staff = req.staff;
 
     if (!staff) {
       return res
@@ -41,44 +61,66 @@ export const getStaffById = async (req, res) => {
 
 export const createStaff = async (req, res) => {
   try {
-    const staff = await Staff.create({ ...req.body, salon: req.salon._id });
+    const { salonId } = req.user;
+    const { userId, ...rest } = req.body;
 
-    if (!staff) {
-      return res.status(404).json({
+    if (!userId) {
+      return res.status(400).json({
         success: false,
-        message: 'Staff not found',
+        message: 'userId is required',
       });
     }
 
-    req.salon.staff.push(staff._id);
-    await req.salon.save();
+    const user = await User.findById(userId);
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'User not found' });
+    }
 
-    res.status(201).json({
+    if (user.role === 'super-admin') {
+      return res.status(400).json({
+        success: false,
+        message: 'A super-admin cannot be added as staff',
+      });
+    }
+
+    // ── Check membership in THIS salon only — not any salon ───────────────
+    const alreadyInThisSalon = await Staff.exists({ userId, salonId });
+    if (alreadyInThisSalon) {
+      return res.status(409).json({
+        success: false,
+        message: 'This user is already a staff member of this salon',
+      });
+    }
+
+    // ── Create staff record ────────────────────────────────────────────────
+    const staff = await Staff.create({ ...rest, userId, salonId });
+
+    // ── Promote role only if they are still a plain customer ──────────────
+    // salon-owner keeps their role — they can moonlight as staff elsewhere
+    if (user.role === 'customer') {
+      await User.findByIdAndUpdate(userId, { role: 'staff' });
+    }
+
+    return res.status(201).json({
       success: true,
+      message: 'Staff created successfully',
       data: staff,
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 
 export const updateStaff = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, specialties, workingHours } = req.body;
 
-    const staff = await Staff.findByIdAndUpdate(
-      id,
-      {
-        name,
-        specialties,
-        workingHours,
-      },
-      { returnDocument: 'after', runValidators: true },
-    );
+    const staff = await Staff.findByIdAndUpdate(id, req.body, {
+      returnDocument: 'after',
+      runValidators: true,
+    });
 
     if (!staff) {
       return res.status(404).json({
@@ -89,6 +131,7 @@ export const updateStaff = async (req, res) => {
 
     res.status(200).json({
       success: true,
+      message: 'Staff updated successfully',
       data: staff,
     });
   } catch (error) {
@@ -112,13 +155,10 @@ export const deleteStaff = async (req, res) => {
       });
     }
 
-    await Salon.findByIdAndUpdate(req.salon._id, {
-      $pull: { staff: id },
-    });
-
     res.status(200).json({
       success: true,
       message: 'Staff deleted successfully',
+      staff,
     });
   } catch (error) {
     res.status(500).json({
@@ -132,7 +172,7 @@ export const getStaffBySalon = async (req, res) => {
   try {
     const { salonId } = req.params;
 
-    const staff = await Staff.find({ salon: salonId });
+    const staff = await Staff.find({ salonId });
 
     if (!staff) {
       return res.status(404).json({
@@ -143,6 +183,7 @@ export const getStaffBySalon = async (req, res) => {
 
     res.status(200).json({
       success: true,
+      message: 'Staff retrieved successfully',
       count: staff.length,
       data: staff,
     });
@@ -156,10 +197,9 @@ export const getStaffBySalon = async (req, res) => {
 
 export const updateStaffWorkingHours = async (req, res) => {
   try {
-    const { id } = req.params;
     const { workingHours } = req.body;
 
-    const staff = await Staff.findById(id);
+    const staff = req.staff;
 
     if (!staff) {
       return res
@@ -186,76 +226,135 @@ export const updateStaffWorkingHours = async (req, res) => {
 
 export const getStaffAvailability = async (req, res) => {
   try {
-    const { id } = req.params; // Staff ID
-    const { date, serviceId } = req.query; // Need serviceId to know duration
+    const { id } = req.params;
+    const { date, serviceId } = req.query;
 
-    // 1. Get Staff and Service details
-    const staff = await Staff.findById(id);
-    const service = await Service.findById(serviceId);
-
-    if (!staff || !service) {
-      return res
-        .status(404)
-        .json({ success: false, message: 'Staff or Service not found' });
+    // ── 1. Validate inputs ───────────────────────────────────────────────────
+    if (!date || !serviceId) {
+      return res.status(400).json({
+        success: false,
+        message: 'date and serviceId are required',
+      });
     }
 
-    const duration = service.duration; // e.g., 60 (minutes)
-    const dayName = new Date(date)
-      .toLocaleDateString('en-US', { weekday: 'long' })
-      .toLowerCase();
-    const schedule = staff.workingHours[dayName];
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return res.status(400).json({
+        success: false,
+        message: 'date must be in YYYY-MM-DD format',
+      });
+    }
 
-    if (!schedule || schedule.isClosed)
+    // ── 2. Reject past dates ─────────────────────────────────────────────────
+    const requestedDate = parseDateUTC(date); // ✅ no timezone drift
+
+    const todayUTC = new Date(
+      Date.UTC(
+        new Date().getUTCFullYear(),
+        new Date().getUTCMonth(),
+        new Date().getUTCDate(),
+      ),
+    );
+
+    if (requestedDate < todayUTC) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot check availability for a past date',
+      });
+    }
+
+    // ── 3. Fetch staff and service ───────────────────────────────────────────
+    const [staff, service] = await Promise.all([
+      Staff.findById(id),
+      Service.findById(serviceId),
+    ]);
+
+    if (!staff) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'Staff not found' });
+    }
+    if (!service) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'Service not found' });
+    }
+
+    // ── 4. Check staff works on this day ─────────────────────────────────────
+    const dayOfWeek = getDayOfWeek(date); // ✅ derived from string, not Date object
+    const schedule = staff.workingHours?.[dayOfWeek];
+
+    if (!schedule || schedule.isClosed) {
       return res.status(200).json({ success: true, slots: [] });
+    }
 
-    // 2. Fetch all bookings and map them to "busy ranges"
+    // ── 5. Fetch existing bookings for that day ───────────────────────────────
+    // requestedDate = "2026-02-23T00:00:00.000Z"
+    // next day      = "2026-02-24T00:00:00.000Z"
+    // This correctly brackets all bookings stored on that UTC date ✅
+    const nextDayUTC = new Date(requestedDate.getTime() + 24 * 60 * 60 * 1000);
+
     const bookings = await Booking.find({
-      staff: id,
-      date: {
-        $gte: new Date(date).setHours(0, 0, 0, 0),
-        $lte: new Date(date).setHours(23, 59, 59, 999),
-      },
-      status: { $ne: 'cancelled' },
-    }).populate('service'); // Populate to get the duration of existing bookings
+      staffId: id, // ✅ was: staff: id
+      date: { $gte: requestedDate, $lt: nextDayUTC }, // ✅ correct UTC range
+      status: { $nin: ['cancelled'] },
+    });
 
+    // ── 6. Map bookings to busy minute ranges ─────────────────────────────────
     const busySlots = bookings.map((b) => ({
-      start: timeToMinutes(b.time),
-      end: timeToMinutes(b.time) + b.service.duration,
+      start: timeToMinutes(b.timeSlot.start), // ✅ was: b.time
+      end: timeToMinutes(b.timeSlot.end), // ✅ use stored end directly
     }));
 
-    // 3. Generate slots
-    const availableSlots = [];
-    let current = timeToMinutes(schedule.open);
+    // ── 7. Generate available slots ───────────────────────────────────────────
+    const openTime = timeToMinutes(schedule.open);
     const closeTime = timeToMinutes(schedule.close);
-    const interval = 30; // Check every 30 mins
+    const duration = service.duration;
+    const interval = 30; // every 30 mins
+
+    const isToday = requestedDate.getTime() === todayUTC.getTime();
+    const nowInMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+
+    const availableSlots = [];
+    let current = openTime;
 
     while (current + duration <= closeTime) {
-      const slotStart = current;
+      // Skip past slots if booking for today
+      if (isToday && current < nowInMinutes) {
+        current += interval;
+        continue;
+      }
+
       const slotEnd = current + duration;
 
-      // Check if this window (start to end) overlaps with ANY existing booking
-      const isOverlap = busySlots.some((busy) => {
-        return slotStart < busy.end && slotEnd > busy.start;
-      });
+      const isOverlapping = busySlots.some(
+        (busy) => current < busy.end && slotEnd > busy.start,
+      );
 
-      if (!isOverlap) {
+      if (!isOverlapping) {
         availableSlots.push(minutesToTime(current));
       }
+
       current += interval;
     }
 
-    res.status(200).json({ success: true, slots: availableSlots });
+    return res.status(200).json({ success: true, slots: availableSlots });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('getStaffAvailability error:', error);
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 
 export const getStaffBookings = async (req, res) => {
   try {
     const { id } = req.params;
-    const bookings = await Booking.find({ staff: id }).populate('service');
+    const bookings = await Booking.find({ staffId: id }).populate('serviceId');
 
-    res.status(200).json({ success: true, bookings });
+    res.status(200).json({
+      success: true,
+      message: 'Bookings retrieved successfully',
+      count: bookings.length,
+      bookings,
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

@@ -1,8 +1,9 @@
 import mongoose from 'mongoose';
+import workingHoursSchema from './workingHours.model.js';
 
 const SalonSchema = new mongoose.Schema(
   {
-    owner: {
+    ownerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: [true, 'A salon must have an owner'],
@@ -26,67 +27,22 @@ const SalonSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    services: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Service',
-      },
-    ],
-    staff: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Staff',
-      },
-    ],
-    reviews: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Review',
-      },
-    ],
-    bookings: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Booking',
-      },
-    ],
+    // reviewsId: [
+    //   {
+    //     type: mongoose.Schema.Types.ObjectId,
+    //     ref: 'Review',
+    //   },
+    // ],
+    // bookingsId: [
+    //   {
+    //     type: mongoose.Schema.Types.ObjectId,
+    //     ref: 'Booking',
+    //   },
+    // ],
 
     workingHours: {
-      monday: {
-        open: { type: String, default: '09:00' },
-        close: { type: String, default: '18:00' },
-        isClosed: { type: Boolean, default: false },
-      },
-      tuesday: {
-        open: { type: String, default: '09:00' },
-        close: { type: String, default: '18:00' },
-        isClosed: { type: Boolean, default: false },
-      },
-      wednesday: {
-        open: { type: String, default: '09:00' },
-        close: { type: String, default: '18:00' },
-        isClosed: { type: Boolean, default: false },
-      },
-      thursday: {
-        open: { type: String, default: '09:00' },
-        close: { type: String, default: '18:00' },
-        isClosed: { type: Boolean, default: false },
-      },
-      friday: {
-        open: { type: String, default: '09:00' },
-        close: { type: String, default: '18:00' },
-        isClosed: { type: Boolean, default: false },
-      },
-      saturday: {
-        open: { type: String, default: '10:00' },
-        close: { type: String, default: '16:00' },
-        isClosed: { type: Boolean, default: false },
-      },
-      sunday: {
-        open: { type: String, default: '00:00' },
-        close: { type: String, default: '00:00' },
-        isClosed: { type: Boolean, default: true },
-      },
+      type: workingHoursSchema,
+      default: () => ({}),
     },
 
     images: { type: [String], default: [] },

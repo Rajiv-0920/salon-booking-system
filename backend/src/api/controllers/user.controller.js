@@ -13,10 +13,14 @@ export const getAllUsers = async (req, res) => {
 
 export const getUserById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
+    const { id } = req.params;
+
+    const user = await User.findById(id);
+
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
+
     res.status(200).json({ success: true, user });
   } catch (error) {
     console.log(`Error in getUserById controller: ${error.message}`);
@@ -26,7 +30,17 @@ export const getUserById = async (req, res) => {
 
 export const updateUserById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
+    const { id } = req.params;
+    const forbiddenFields = ['role', 'password'];
+
+    if (req.user.role !== 'super-admin') {
+      forbiddenFields.forEach((field) => delete req.body[field]);
+    }
+
+    const user = await User.findByIdAndUpdate(id, req.body, {
+      returnDocument: 'after',
+      runValidators: true,
+    });
 
     if (!user) {
       return res
@@ -34,33 +48,12 @@ export const updateUserById = async (req, res) => {
         .json({ success: false, message: 'User not found' });
     }
 
-    if (req.body.role && req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Only admins can change user roles',
-      });
-    }
-
-    const allowedUpdates = ['name', 'email', 'phone', 'role'];
-
-    allowedUpdates.forEach((update) => {
-      if (req.body[update] !== undefined) {
-        user[update] = req.body[update];
-      }
-    });
-
-    const updatedUser = await user.save();
+    await user.save();
 
     res.status(200).json({
       success: true,
       message: 'User updated successfully',
-      data: {
-        id: updatedUser._id,
-        name: updatedUser.name,
-        email: updatedUser.email,
-        role: updatedUser.role,
-        phone: updatedUser.phone,
-      },
+      data: user,
     });
   } catch (error) {
     if (error.code === 11000) {
@@ -77,19 +70,20 @@ export const updateUserById = async (req, res) => {
 
 export const deleteUserById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
+    const { id } = req.params;
 
-    if (!user) {
+    const deletedUser = await User.findByIdAndDelete(id);
+
+    if (!deletedUser) {
       return res
         .status(404)
         .json({ success: false, message: 'User not found' });
     }
 
-    await User.findByIdAndDelete(req.params.id);
-
     res.status(200).json({
       success: true,
       message: 'User deleted successfully',
+      data: deletedUser,
     });
   } catch (error) {
     res
@@ -100,23 +94,15 @@ export const deleteUserById = async (req, res) => {
 
 export const getUserBookings = async (req, res) => {
   try {
-    const bookings = await Booking.find({ user: req.params.id })
-      .populate('salon', 'name address')
-      .populate('service', 'name price')
-      .populate('staff', 'name')
-      .sort({ date: -1, time: -1 });
+    const { id } = req.params;
 
-    if (!bookings || bookings.length === 0) {
-      return res
-        .status(404)
-        .json({ success: false, message: 'No bookings found' });
-    }
+    const userBookings = await Booking.find({ userId: id }).populate(
+      'service staff',
+    );
 
-    res.status(200).json({
-      success: true,
-      count: bookings.length,
-      data: bookings,
-    });
+    res
+      .status(200)
+      .json({ success: true, count: userBookings.length, data: userBookings });
   } catch (error) {
     console.log(`Error in getUserBookings: ${error.message}`);
     res.status(500).json({

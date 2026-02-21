@@ -1,5 +1,10 @@
 import { Router } from 'express';
-import { isTheSalonOwner, protect } from '../middleware/auth.js';
+import {
+  protect,
+  restrictTo,
+  verifyStaffOwnership,
+  verifyStaffSelfOrOwner,
+} from '../middleware/auth.middleware.js';
 import * as controller from '../controllers/staff.controller.js';
 
 const router = Router();
@@ -117,7 +122,12 @@ const router = Router();
  *       500:
  *         description: Server error
  */
-router.get('/', controller.getAllStaff);
+router.get(
+  '/',
+  protect,
+  restrictTo('super-admin', 'salon-owner'),
+  controller.getAllStaff,
+);
 
 /**
  * @swagger
@@ -214,7 +224,7 @@ router.get('/salon/:salonId', controller.getStaffBySalon);
  *       500:
  *         description: Server error
  */
-router.get('/:id', controller.getStaffById);
+router.get('/:id', protect, verifyStaffSelfOrOwner, controller.getStaffById);
 
 /**
  * @swagger
@@ -265,7 +275,12 @@ router.get('/:id', controller.getStaffById);
  *       500:
  *         description: Server error
  */
-router.post('/', protect, isTheSalonOwner, controller.createStaff);
+router.post(
+  '/',
+  protect,
+  restrictTo('super-admin', 'salon-owner'),
+  controller.createStaff,
+);
 
 /**
  * @swagger
@@ -323,7 +338,13 @@ router.post('/', protect, isTheSalonOwner, controller.createStaff);
  *       500:
  *         description: Server error
  */
-router.put('/:id', protect, isTheSalonOwner, controller.updateStaff);
+router.put(
+  '/:id',
+  protect,
+  restrictTo('super-admin', 'salon-owner'),
+  verifyStaffOwnership,
+  controller.updateStaff,
+);
 
 /**
  * @swagger
@@ -365,7 +386,13 @@ router.put('/:id', protect, isTheSalonOwner, controller.updateStaff);
  *       500:
  *         description: Server error
  */
-router.delete('/:id', protect, isTheSalonOwner, controller.deleteStaff);
+router.delete(
+  '/:id',
+  protect,
+  restrictTo('super-admin', 'salon-owner'),
+  verifyStaffOwnership,
+  controller.deleteStaff,
+);
 
 /**
  * @swagger
@@ -428,7 +455,8 @@ router.delete('/:id', protect, isTheSalonOwner, controller.deleteStaff);
 router.put(
   '/:id/working-hours',
   protect,
-  isTheSalonOwner,
+  restrictTo('super-admin', 'salon-owner'),
+  verifyStaffOwnership,
   controller.updateStaffWorkingHours,
 );
 
@@ -557,6 +585,11 @@ router.get('/:id/availability', controller.getStaffAvailability);
  *       500:
  *         description: Server error
  */
-router.get('/:id/bookings', controller.getStaffBookings);
+router.get(
+  '/:id/bookings',
+  protect,
+  verifyStaffSelfOrOwner,
+  controller.getStaffBookings,
+);
 
 export default router;

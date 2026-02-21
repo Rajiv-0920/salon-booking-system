@@ -2,17 +2,17 @@ import mongoose from 'mongoose';
 
 const ReviewSchema = new mongoose.Schema(
   {
-    customer: {
+    customerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: [true, 'Customer is required'],
     },
-    salon: {
+    salonId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Salon',
       required: [true, 'Salon is required'],
     },
-    booking: {
+    bookingId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Booking',
       required: [true, 'Booking is required'],

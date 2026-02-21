@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import * as controller from '../controllers/auth.controller.js';
-import { protect } from '../middleware/auth.js';
+import { protect } from '../middleware/auth.middleware.js';
 
 const router = Router();
 
@@ -214,5 +214,7 @@ router.put('/update-password', protect, controller.updatePassword);
  *         description: Profile updated successfully
  */
 router.put('/update-profile', protect, controller.updateProfile);
+
+router.get('/bookings', protect, controller.getMyBookings);
 
 export default router;

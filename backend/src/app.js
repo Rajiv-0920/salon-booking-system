@@ -7,7 +7,7 @@ const app = express();
 
 app.use(
   cors({
-    origin: 'http://localhost:5000', // swagger UI origin
+    origin: 'http://localhost:5000',
     credentials: true,
   }),
 );

@@ -1,11 +1,14 @@
 import Salon from '../models/salon.model.js';
 import Service from '../models/services.model.js';
+import Category from '../models/category.model.js';
 
 export const getAllServices = async (req, res) => {
   try {
-    const services = await Service.find().populate('category', 'name');
+    const services = await Service.find().populate('categoryId', 'name');
+
     res.status(200).json({
       success: true,
+      message: 'Services retrieved successfully',
       count: services.length,
       data: services,
     });
@@ -41,27 +44,17 @@ export const getServiceById = async (req, res) => {
 
 export const createService = async (req, res) => {
   try {
-    const { name, description, price, duration, category } = req.body;
-    const { _id: userId } = req.user;
-    const salon = await Salon.findOne({ owner: userId });
-
-    if (!salon) {
-      return res
-        .status(404)
-        .json({ success: false, message: 'Salon not found' });
-    }
+    const { name, description, price, duration, categoryId } = req.body;
+    const { salonId } = req.user;
 
     const service = await Service.create({
       name,
       description,
       price,
       duration,
-      salon: salon._id,
-      category,
+      salonId,
+      categoryId,
     });
-
-    salon.services.push(service._id);
-    await salon.save();
 
     res.status(201).json({
       success: true,
@@ -78,23 +71,24 @@ export const createService = async (req, res) => {
 export const updateService = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, price, duration, category } = req.body;
-    const { _id: userId } = req.user;
-    const { _id: salonId } = await Salon.findOne({ owner: userId });
+    const { name, description, price, duration, categoryId } = req.body;
 
     const service = await Service.findByIdAndUpdate(
       id,
-      { name, description, price, duration, salon: salonId, category },
+      { name, description, price, duration, categoryId },
       { returnDocument: 'after', runValidators: true },
     );
+
     if (!service) {
       return res.status(404).json({
         success: false,
         message: 'Service not found',
       });
     }
+
     res.status(200).json({
       success: true,
+      message: 'Service updated successfully',
       data: service,
     });
   } catch (error) {
@@ -108,16 +102,6 @@ export const updateService = async (req, res) => {
 export const deleteService = async (req, res) => {
   try {
     const { id } = req.params;
-    const { _id: userId } = req.user;
-
-    const salon = await Salon.findOne({ owner: userId });
-
-    if (!salon) {
-      return res.status(404).json({
-        success: false,
-        message: 'Salon not found',
-      });
-    }
 
     const service = await Service.findByIdAndDelete(id);
 
@@ -127,10 +111,6 @@ export const deleteService = async (req, res) => {
         message: 'Service not found',
       });
     }
-
-    await Salon.findByIdAndUpdate(salon._id, {
-      $pull: { services: id },
-    });
 
     res.status(200).json({
       success: true,
@@ -147,9 +127,13 @@ export const deleteService = async (req, res) => {
 export const getServicesBySalonId = async (req, res) => {
   try {
     const { salonId } = req.params;
-    const services = await Service.find({ salon: salonId });
+
+    const services = await Service.find({ salonId });
+
     res.status(200).json({
       success: true,
+      message: 'Services retrieved successfully',
+      count: services.length,
       data: services,
     });
   } catch (error) {
@@ -163,9 +147,17 @@ export const getServicesBySalonId = async (req, res) => {
 export const getServicesByCategory = async (req, res) => {
   try {
     const { category } = req.params;
-    const services = await Service.find({ category });
+
+    const categoryDoc = await Category.findOne({ slug: category });
+
+    const services = await Service.find({ categoryId: categoryDoc._id })
+      .populate('salonId', 'name address')
+      .sort({ price: 1 });
+
     res.status(200).json({
       success: true,
+      count: services.length,
+      categoryName: categoryDoc.name,
       data: services,
     });
   } catch (error) {
