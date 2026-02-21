@@ -1,5 +1,9 @@
 import { Router } from 'express';
-import { admin, isOwnerOrAdmin, protect } from '../middleware/auth.js';
+import {
+  protect,
+  restrictTo,
+  verifySelfOrSuperAdmin,
+} from '../middleware/auth.middleware.js';
 import * as controller from '../controllers/user.controller.js';
 
 const router = Router();
@@ -68,7 +72,7 @@ const router = Router();
  *       403:
  *         description: Access denied
  */
-router.get('/', protect, admin, controller.getAllUsers);
+router.get('/', protect, restrictTo('super-admin'), controller.getAllUsers);
 
 /**
  * @swagger
@@ -95,7 +99,12 @@ router.get('/', protect, admin, controller.getAllUsers);
  *       404:
  *         description: User not found
  */
-router.get('/:id', protect, isOwnerOrAdmin, controller.getUserById);
+router.get(
+  '/:id',
+  protect,
+  verifySelfOrSuperAdmin('id'),
+  controller.getUserById,
+);
 
 /**
  * @swagger
@@ -126,7 +135,12 @@ router.get('/:id', protect, isOwnerOrAdmin, controller.getUserById);
  *       404:
  *         description: User not found
  */
-router.put('/:id', protect, admin, controller.updateUserById);
+router.put(
+  '/:id',
+  protect,
+  verifySelfOrSuperAdmin('id'),
+  controller.updateUserById,
+);
 
 /**
  * @swagger
@@ -151,7 +165,12 @@ router.put('/:id', protect, admin, controller.updateUserById);
  *       404:
  *         description: User not found
  */
-router.delete('/:id', protect, admin, controller.deleteUserById);
+router.delete(
+  '/:id',
+  protect,
+  restrictTo('super-admin'),
+  controller.deleteUserById,
+);
 
 /**
  * @swagger
@@ -185,7 +204,7 @@ router.delete('/:id', protect, admin, controller.deleteUserById);
 router.get(
   '/:id/bookings',
   protect,
-  isOwnerOrAdmin,
+  verifySelfOrSuperAdmin('id'),
   controller.getUserBookings,
 );
 

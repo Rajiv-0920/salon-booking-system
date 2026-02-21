@@ -2,22 +2,28 @@ import sendEmail from '../library/email.js';
 import { generateToken } from '../library/utils.js';
 import User from '../models/user.model.js';
 import crypto from 'crypto';
+import Booking from '../models/booking.model.js';
 import jwt from 'jsonwebtoken';
 
 export const register = async (req, res) => {
   try {
-    const { name, email, password, phone } = req.body;
+    const { name, email, password, phone, role } = req.body;
 
-    let user = await User.findOne({ email });
+    let user = await User.findOne({ email: email.toLowerCase().trim() });
     if (user) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
+    if (role !== 'customer' && role !== 'salon-owner') {
+      return res.status(400).json({ message: 'Invalid role' });
+    }
+
     user = new User({
       name,
-      email,
+      email: email.toLowerCase().trim(),
       password,
       phone,
+      role,
     });
 
     await user.save();
@@ -25,12 +31,13 @@ export const register = async (req, res) => {
     const token = generateToken(res, { id: user._id, role: user.role });
     res.status(201).json({
       success: true,
+      message: 'User registered successfully',
       token,
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: 'customer',
+        role: user.role,
       },
     });
   } catch (error) {
@@ -56,6 +63,7 @@ export const login = async (req, res) => {
     const token = generateToken(res, { id: user._id, role: user.role });
     res.status(200).json({
       success: true,
+      message: 'User logged in successfully',
       token,
       user: {
         id: user._id,
@@ -85,7 +93,9 @@ export const getCurrentLoginUser = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    res.status(200).json({ success: true, user });
+    res
+      .status(200)
+      .json({ success: true, message: 'Get User successfully', user });
   } catch (error) {
     console.log(`Error getting current login user: ${error.message}`);
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -134,7 +144,6 @@ export const resetPassword = async (req, res) => {
   try {
     const { token } = req.params;
     const { password, passwordConfirm } = req.body;
-    console.log(token, password);
 
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
@@ -193,8 +202,9 @@ export const updatePassword = async (req, res) => {
 export const updateProfile = async (req, res) => {
   try {
     const { name, phone } = req.body;
+    const userId = req.user._id;
 
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(userId);
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -205,11 +215,28 @@ export const updateProfile = async (req, res) => {
 
     await user.save({ validateBeforeSave: false });
 
-    res
-      .status(200)
-      .json({ success: true, message: 'Profile updated successfully' });
+    res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: user,
+    });
   } catch (error) {
     console.log(`Error updating profile: ${error.message}`);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+export const getMyBookings = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const bookings = await Booking.find({ user: userId });
+
+    res
+      .status(200)
+      .json({ success: true, message: 'Get bookings successfully', bookings });
+  } catch (error) {
+    console.log(`Error fetching bookings: ${error.message}`);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };

@@ -1,6 +1,10 @@
 import { Router } from 'express';
 import * as controller from '../controllers/salon.controller.js';
-import { isTheSalonOwner, protect } from '../middleware/auth.js';
+import {
+  restrictTo,
+  protect,
+  verifyOwnership,
+} from '../middleware/auth.middleware.js';
 import { upload } from '../library/cloudinary.js';
 
 const router = Router();
@@ -159,7 +163,13 @@ router.get('/:id', controller.getSalon);
  *       200:
  *         description: Salon updated
  */
-router.put('/:id', protect, isTheSalonOwner, controller.updateSalon);
+router.put(
+  '/:id',
+  protect,
+  restrictTo('salon-owner', 'super-admin'),
+  verifyOwnership,
+  controller.updateSalon,
+);
 
 /**
  * @swagger
@@ -179,7 +189,13 @@ router.put('/:id', protect, isTheSalonOwner, controller.updateSalon);
  *       200:
  *         description: Salon deleted
  */
-router.delete('/:id', protect, isTheSalonOwner, controller.deleteSalon);
+router.delete(
+  '/:id',
+  protect,
+  restrictTo('super-admin', 'salon-owner'),
+  verifyOwnership,
+  controller.deleteSalon,
+);
 
 /**
  * @swagger
@@ -256,7 +272,8 @@ router.get('/:id/reviews', controller.getSalonReviews);
 router.get(
   '/:id/bookings',
   protect,
-  isTheSalonOwner,
+  restrictTo('salon-owner', 'super-admin'),
+  verifyOwnership,
   controller.getSalonBookings,
 );
 
@@ -325,7 +342,8 @@ router.get(
 router.put(
   '/:id/working-hours',
   protect,
-  isTheSalonOwner,
+  restrictTo('super-admin', 'salon-owner'),
+  verifyOwnership,
   controller.updateWorkingHours,
 );
 
@@ -375,7 +393,8 @@ router.put(
 router.put(
   '/:id/holidays',
   protect,
-  isTheSalonOwner,
+  restrictTo('super-admin', 'salon-owner'),
+  verifyOwnership,
   controller.updateHolidays,
 );
 
@@ -420,7 +439,8 @@ router.put(
 router.put(
   '/:id/availability',
   protect,
-  isTheSalonOwner,
+  restrictTo('super-admin', 'salon-owner'),
+  verifyOwnership,
   controller.updateAvailability,
 );
 
@@ -480,7 +500,8 @@ router.put(
 router.post(
   '/:id/images',
   protect,
-  isTheSalonOwner,
+  restrictTo('super-admin', 'salon-owner'),
+  verifyOwnership,
   upload.array('images', 5),
   controller.uploadSalonImages,
 );
@@ -511,7 +532,8 @@ router.post(
 router.delete(
   '/:id/images/:imageId',
   protect,
-  isTheSalonOwner,
+  restrictTo('super-admin', 'salon-owner'),
+  verifyOwnership,
   controller.deleteSalonImage,
 );
 

@@ -10,17 +10,16 @@ export const createSalon = async (req, res) => {
   try {
     const { name, address, location, holidays, workingHours, images } =
       req.body;
+    const userId = req.user._id;
 
     const salon = new Salon({
-      owner: req.user.id,
+      ownerId: userId,
       name,
       address,
       location,
       holidays,
       images,
       workingHours,
-      services: [],
-      staff: [],
     });
 
     const savedSalon = await salon.save();
@@ -61,7 +60,7 @@ export const getSalons = async (req, res) => {
     const skip = (page - 1) * limit;
 
     let result = Salon.find(queryObj)
-      .populate('owner', 'name email') // Link owner details
+      .populate('ownerId', 'name email') // Link owner details
       .skip(skip)
       .limit(Number(limit));
 
@@ -80,6 +79,7 @@ export const getSalons = async (req, res) => {
 
     res.status(200).json({
       success: true,
+      message: 'Salons retrieved successfully',
       count: salons.length,
       totalPages: Math.ceil(totalSalons / limit),
       currentPage: Number(page),
@@ -95,7 +95,7 @@ export const getSalon = async (req, res) => {
     const { id } = req.params;
 
     const salon = await Salon.findById(id)
-      .populate('owner', 'name email -_id')
+      .populate('ownerId', 'name email -_id')
       .populate('services', 'name duration price description -_id')
       .populate('staff', 'name specialties -_id');
 
@@ -107,6 +107,7 @@ export const getSalon = async (req, res) => {
 
     res.status(200).json({
       success: true,
+      message: 'Salon retrieved successfully',
       data: salon,
     });
   } catch (error) {
@@ -117,14 +118,6 @@ export const getSalon = async (req, res) => {
 export const updateSalon = async (req, res) => {
   try {
     const { id } = req.params;
-
-    let salon = await Salon.findById(id);
-
-    if (!salon) {
-      return res
-        .status(404)
-        .json({ success: false, message: 'Salon not found' });
-    }
 
     const updatedSalon = await Salon.findByIdAndUpdate(id, req.body, {
       returnDocument: 'after',
@@ -145,19 +138,18 @@ export const deleteSalon = async (req, res) => {
   try {
     const { id } = req.params;
 
-    let salon = await Salon.findById(id);
+    const deletedSalon = await Salon.findByIdAndDelete(id);
 
-    if (!salon) {
+    if (!deletedSalon) {
       return res
         .status(404)
         .json({ success: false, message: 'Salon not found' });
     }
 
-    await Salon.findByIdAndDelete(id);
-
     res.status(200).json({
       success: true,
       message: 'Salon deleted successfully',
+      data: deletedSalon,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -168,17 +160,19 @@ export const getSalonServices = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const salon = await Salon.findById(id).populate('services');
+    const services = await Services.find({ salonId: id });
 
-    if (!salon) {
+    if (!services) {
       return res
         .status(404)
-        .json({ success: false, message: 'Salon not found' });
+        .json({ success: false, message: 'Services not found' });
     }
 
     res.status(200).json({
       success: true,
-      data: salon.services,
+      message: 'Services retrieved successfully',
+      count: services.length,
+      data: services,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -189,17 +183,19 @@ export const getSalonStaff = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const salon = await Salon.findById(id).populate('staff');
+    const staff = await Staff.find({ salonId: id });
 
-    if (!salon) {
+    if (!staff) {
       return res
         .status(404)
-        .json({ success: false, message: 'Salon not found' });
+        .json({ success: false, message: 'Staff not found' });
     }
 
     res.status(200).json({
       success: true,
-      data: salon.staff,
+      message: 'Staff retrieved successfully',
+      count: staff.length,
+      data: staff,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -210,17 +206,19 @@ export const getSalonReviews = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const salon = await Salon.findById(id).populate('reviews');
+    const reviews = await Review.find({ salonId: id });
 
-    if (!salon) {
+    if (!reviews) {
       return res
         .status(404)
-        .json({ success: false, message: 'Salon not found' });
+        .json({ success: false, message: 'Reviews not found' });
     }
 
     res.status(200).json({
       success: true,
-      data: salon.reviews,
+      message: 'Reviews retrieved successfully',
+      count: reviews.length,
+      data: reviews,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -231,17 +229,19 @@ export const getSalonBookings = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const salon = await Salon.findById(id).populate('bookings');
+    const bookings = await Booking.find({ salonId: id });
 
-    if (!salon) {
+    if (!bookings) {
       return res
         .status(404)
-        .json({ success: false, message: 'Salon not found' });
+        .json({ success: false, message: 'Bookings not found' });
     }
 
     res.status(200).json({
       success: true,
-      data: salon.bookings,
+      message: 'Bookings retrieved successfully',
+      count: bookings.length,
+      data: bookings,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -355,6 +355,7 @@ export const updateWorkingHours = async (req, res) => {
 
     res.status(200).json({
       success: true,
+      message: 'Salon working hours updated',
       data: salon,
     });
   } catch (error) {
@@ -415,7 +416,7 @@ export const updateAvailability = async (req, res) => {
     res.status(200).json({
       success: true,
       message: `Salon is now ${isAvailable ? 'available' : 'unavailable'} for bookings`,
-      data: { isAvailable: salon.isAvailable },
+      data: salon,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -457,10 +458,10 @@ export const uploadSalonImages = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: salon.images,
+      message: 'Salon images updated',
+      data: salon,
     });
   } catch (error) {
-    // Ensuring the response is ALWAYS JSON
     res.status(500).json({
       success: false,
       message: error.message || 'An unexpected error occurred',
@@ -497,7 +498,7 @@ export const deleteSalonImage = async (req, res) => {
     res.status(200).json({
       success: true,
       message: 'Image removed successfully',
-      remainingImages: salon.images,
+      salon,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

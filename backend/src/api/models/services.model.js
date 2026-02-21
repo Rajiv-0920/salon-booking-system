@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const ServiceSchema = new mongoose.Schema(
   {
-    salon: {
+    salonId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Salon',
       required: [true, 'Salon is required'],
@@ -11,7 +11,7 @@ const ServiceSchema = new mongoose.Schema(
     duration: { type: Number, required: [true, 'Duration is required'] },
     price: { type: Number, required: [true, 'Price is required'] },
     description: { type: String, required: [true, 'Description is required'] },
-    category: {
+    categoryId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Category',
     },

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import * as controller from '../controllers/category.controller.js';
-import { admin, protect } from '../middleware/auth.js';
+import { protect, restrictTo } from '../middleware/auth.middleware.js';
 
 const router = Router();
 
@@ -87,7 +87,7 @@ router.get('/:id', controller.getCategoryById);
  *       201:
  *         description: Category created successfully
  */
-router.post('/', protect, admin, controller.createCategory);
+router.post('/', protect, restrictTo('super-admin'), controller.createCategory);
 
 /**
  * @swagger
@@ -113,7 +113,12 @@ router.post('/', protect, admin, controller.createCategory);
  *       200:
  *         description: Category updated successfully
  */
-router.put('/:id', protect, admin, controller.updateCategory);
+router.put(
+  '/:id',
+  protect,
+  restrictTo('super-admin'),
+  controller.updateCategory,
+);
 
 /**
  * @swagger
@@ -133,6 +138,11 @@ router.put('/:id', protect, admin, controller.updateCategory);
  *       200:
  *         description: Category deleted successfully
  */
-router.delete('/:id', protect, admin, controller.deleteCategory);
+router.delete(
+  '/:id',
+  protect,
+  restrictTo('super-admin'),
+  controller.deleteCategory,
+);
 
 export default router;
