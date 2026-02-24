@@ -46,11 +46,15 @@ const SalonSchema = new mongoose.Schema(
     },
 
     images: { type: [String], default: [] },
-    rating: {
+    avgRating: {
       type: Number,
       default: 0,
       min: 0,
       max: 5,
+    },
+    reviewCount: {
+      type: Number,
+      default: 0,
     },
     location: {
       type: {

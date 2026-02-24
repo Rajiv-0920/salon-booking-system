@@ -1,10 +1,9 @@
 import { Router } from 'express';
+import { protect, restrictTo } from '../middleware/auth.middleware.js';
 import {
-  protect,
-  restrictTo,
-  verifyStaffOwnership,
   verifyStaffSelfOrOwner,
-} from '../middleware/auth.middleware.js';
+  verifyStaffOwnership,
+} from '../middleware/staff.middleware.js';
 import * as controller from '../controllers/staff.controller.js';
 
 const router = Router();

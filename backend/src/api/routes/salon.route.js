@@ -1,11 +1,8 @@
 import { Router } from 'express';
 import * as controller from '../controllers/salon.controller.js';
-import {
-  restrictTo,
-  protect,
-  verifyOwnership,
-} from '../middleware/auth.middleware.js';
+import { restrictTo, protect } from '../middleware/auth.middleware.js';
 import { upload } from '../library/cloudinary.js';
+import { verifyOwnership } from '../middleware/salon.middleware.js';
 
 const router = Router();
 
