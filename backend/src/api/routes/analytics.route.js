@@ -371,7 +371,7 @@ router.get(
   '/salon/:salonId/peak-hours',
   protect,
   restrictTo('salon-owner', 'super-admin'),
-  verifyOwnership(salonId),
+  verifyOwnership('salonId'),
   controller.getPeakHours,
 );
 

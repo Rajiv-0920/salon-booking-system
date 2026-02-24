@@ -9,6 +9,7 @@ import staffRouter from './staff.route.js';
 import bookingRouter from './booking.route.js';
 import reviewRouter from './review.route.js';
 import analyticsRouter from './analytics.route.js';
+import adminRouter from './admin.route.js';
 
 const router = Router();
 
@@ -29,5 +30,7 @@ router.use('/bookings', bookingRouter);
 router.use('/reviews', reviewRouter);
 
 router.use('/analytics', analyticsRouter);
+
+router.use('/admin', adminRouter);
 
 export default router;

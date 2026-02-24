@@ -15,10 +15,16 @@ export const protect = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const userDoc = await User.findById(decoded.id).select('-password');
+    const userDoc = await User.findById(decoded.id);
 
     if (!userDoc) {
       return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (userDoc?.status === 'suspended') {
+      return res.status(403).json({
+        message: 'Your session is no longer valid. Account suspended.',
+      });
     }
 
     const user = userDoc.toObject();
@@ -33,8 +39,11 @@ export const protect = async (req, res, next) => {
     }
 
     req.user = user;
+
     next();
   } catch (error) {
+    console.log(error.message);
+
     return res.status(401).json({ message: 'Not authorized, token failed' });
   }
 };
