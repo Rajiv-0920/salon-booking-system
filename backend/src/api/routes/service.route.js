@@ -1,10 +1,7 @@
 import { Router } from 'express';
 import * as controller from '../controllers/service.controller.js';
-import {
-  protect,
-  restrictTo,
-  verifyServiceOwnership,
-} from '../middleware/auth.middleware.js';
+import { protect, restrictTo } from '../middleware/auth.middleware.js';
+import { verifyServiceOwnership } from '../middleware/service.middleware.js';
 
 const router = Router();
 

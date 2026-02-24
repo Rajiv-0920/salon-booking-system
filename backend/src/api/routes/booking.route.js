@@ -2,12 +2,14 @@ import { Router } from 'express';
 import {
   restrictTo,
   protect,
+  verifySelfOrSuperAdmin,
+} from '../middleware/auth.middleware.js';
+import {
   verifyBookingAccess,
   verifyBookingCustomerOrOwner,
-  verifySelfOrSuperAdmin,
-  verifySalonAccess,
   verifyBookingSalonOwnership,
-} from '../middleware/auth.middleware.js';
+} from '../middleware/booking.middleware.js';
+import { verifySalonAccess } from '../middleware/salon.middleware.js';
 import * as controller from '../controllers/booking.controller.js';
 
 const router = Router();

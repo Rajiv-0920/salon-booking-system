@@ -4,28 +4,31 @@ import Staff from '../models/staff.model.js';
 // ─────────────────────────────────────────────────────────────────────────────
 // SALON OWNERSHIP — salon-owner owns this salon
 // ─────────────────────────────────────────────────────────────────────────────
-export const verifyOwnership = async (req, res, next) => {
-  try {
-    const salon = await Salon.findById(req.params.id);
-    if (!salon) {
-      return res.status(404).json({ message: 'Salon not found' });
+export const verifyOwnership =
+  (paramName = 'id') =>
+  async (req, res, next) => {
+    try {
+      const isSuperAdmin = req.user.role === 'super-admin';
+      if (isSuperAdmin) return next(); // ✅ return here
+
+      const salon = await Salon.findById(req.params[paramName]);
+      if (!salon) {
+        return res.status(404).json({ message: 'Salon not found' });
+      }
+
+      const isOwner = salon.ownerId.toString() === req.user._id.toString();
+      if (!isOwner) {
+        return res
+          .status(403)
+          .json({ message: 'Forbidden: not the salon owner' });
+      }
+
+      req.salon = salon;
+      return next();
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
     }
-
-    const isOwner = salon.ownerId.toString() === req.user._id.toString();
-    const isSuperAdmin = req.user.role === 'super-admin';
-
-    if (!isOwner && !isSuperAdmin) {
-      return res
-        .status(403)
-        .json({ message: 'Forbidden: not the salon owner' });
-    }
-
-    req.salon = salon;
-    next();
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-};
+  };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SALON ACCESS — owner (own salon) | staff (own salon) | superadmin

@@ -97,11 +97,11 @@ const swaggerSpec = swaggerJSDoc(options);
 
 const swaggerDocs = (app) => {
   app.use(
-    '/api-docs',
+    '/api/api-docs',
     swaggerUi.serve,
     swaggerUi.setup(swaggerSpec, { swaggerOptions: { withCredentials: true } }),
   );
-  console.log('Swagger running at http://localhost:5000/api-docs');
+  console.log('Swagger running at http://localhost:5000/api/api-docs');
 };
 
 export default swaggerDocs;
