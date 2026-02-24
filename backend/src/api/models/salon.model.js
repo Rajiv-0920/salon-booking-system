@@ -27,18 +27,6 @@ const SalonSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    // reviewsId: [
-    //   {
-    //     type: mongoose.Schema.Types.ObjectId,
-    //     ref: 'Review',
-    //   },
-    // ],
-    // bookingsId: [
-    //   {
-    //     type: mongoose.Schema.Types.ObjectId,
-    //     ref: 'Booking',
-    //   },
-    // ],
 
     workingHours: {
       type: workingHoursSchema,

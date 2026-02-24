@@ -33,6 +33,12 @@ const UserSchema = new mongoose.Schema(
       trim: true,
       match: [/^\d{10}$/, 'Please enter a valid phone number'],
     },
+    status: {
+      type: String,
+      enum: ['active', 'inactive', 'suspended'],
+      default: 'active',
+      index: true,
+    },
     passwordResetToken: {
       type: String,
       select: false,
